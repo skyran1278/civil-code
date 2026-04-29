@@ -11,32 +11,23 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
-import { corpusSchema } from "../lib/schemas";
+import { z } from "zod";
+import { corpusSchema, extractionResultSchema } from "../lib/schemas";
+
+const EXTRACTION_TOOL_NAME = "emit_articles";
 
 const EXTRACTION_PROMPT = `你是一個結構化文件擷取助手。輸入是「建築物混凝土結構設計規範及解說」(GL000236, 112 年版) 的 PDF。
 
-請逐條擷取每一條規範與其解說，輸出為 JSON：
+請逐條擷取每一條規範與其解說，呼叫 \`${EXTRACTION_TOOL_NAME}\` 工具回傳結果。每筆 article 包含：
 
-{
-  "articles": [
-    {
-      "id": "條編號（例如 \\"3.7.5\\"、\\"15.5.4\\"，使用點號分隔）",
-      "chapter": "所屬章標題（含中文章名）",
-      "section": "所屬節標題",
-      "subsection": "條的完整標題（含條號）",
-      "body": "規範本文 verbatim（逐字、保留全形/半形空白與標點）",
-      "commentary": "對應【解說】verbatim，沒有則為 null",
-      "tables": [],
-      "reviewed": false
-    }
-  ]
-}
-
-要求：
-1. body 與 commentary 必須是 PDF 中的逐字文字，不得改寫、總結、補空白。
-2. 條編號用「章.節.條」格式（例如 3.7.5），附錄類別用「附錄 X.Y」格式。
-3. 表格暫時不擷取（tables 永遠為空陣列）。
-4. 只輸出 JSON 物件，不要 markdown 區塊、不要說明文字。`;
+- id：條編號（例如 "3.7.5"、"15.5.4"，使用點號分隔；附錄類別用「附錄 X.Y」格式）
+- chapter：所屬章標題（含中文章名）
+- section：所屬節標題
+- subsection：條的完整標題（含條號）
+- body：規範本文 verbatim（逐字、保留全形/半形空白與標點，不得改寫、總結、補空白）
+- commentary：對應【解說】verbatim，沒有則為 null
+- tables：永遠為空陣列（表格暫時不擷取）
+- reviewed：永遠為 false`;
 
 interface ExtractionInput {
   pdfPath: string;
@@ -54,9 +45,23 @@ async function extract(input: ExtractionInput): Promise<void> {
 
   console.log(`Sending ${input.pdfPath} (${pdfData.length} bytes) to ${input.model}…`);
 
+  const inputSchema = z.toJSONSchema(extractionResultSchema) as {
+    type: "object";
+    [k: string]: unknown;
+  };
+
   const response = await client.messages.create({
     model: input.model,
     max_tokens: 64000,
+    tools: [
+      {
+        name: EXTRACTION_TOOL_NAME,
+        description:
+          "Emit the structured list of articles extracted verbatim from the regulation PDF.",
+        input_schema: inputSchema,
+      },
+    ],
+    tool_choice: { type: "tool", name: EXTRACTION_TOOL_NAME },
     messages: [
       {
         role: "user",
@@ -71,12 +76,16 @@ async function extract(input: ExtractionInput): Promise<void> {
     ],
   });
 
-  const textBlock = response.content.find((c) => c.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("Claude response missing text content");
+  const toolUse = response.content.find(
+    (c) => c.type === "tool_use" && c.name === EXTRACTION_TOOL_NAME
+  );
+  if (!toolUse || toolUse.type !== "tool_use") {
+    throw new Error(
+      `Claude response missing tool_use block for ${EXTRACTION_TOOL_NAME}`
+    );
   }
 
-  const parsed = JSON.parse(textBlock.text);
+  const parsed = extractionResultSchema.parse(toolUse.input);
   const corpus = corpusSchema.parse({
     meta: {
       law_id: "GL000236",

@@ -40,5 +40,10 @@ export const corpusSchema = z.object({
   articles: z.array(articleSchema),
 });
 
+export const extractionResultSchema = z.object({
+  articles: z.array(articleSchema),
+});
+
 export type LlmAnswer = z.infer<typeof llmAnswerSchema>;
 export type CitationInput = z.infer<typeof citationSchema>;
+export type ExtractionResult = z.infer<typeof extractionResultSchema>;

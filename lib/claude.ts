@@ -1,4 +1,20 @@
+import { z } from "zod";
 import { llmAnswerSchema, type LlmAnswer } from "./schemas";
+
+const ANSWER_TOOL_NAME = "answer_with_citations";
+const ANSWER_TOOL_DESCRIPTION =
+  "Return the final answer along with verbatim citations from the regulation corpus.";
+
+interface AnthropicTool {
+  name: string;
+  description?: string;
+  input_schema: { type: "object"; [k: string]: unknown };
+}
+
+interface AnthropicToolChoice {
+  type: "tool";
+  name: string;
+}
 
 export interface MessagesApi {
   // Loose interface so both the mock and the real Anthropic SDK satisfy it.
@@ -8,6 +24,8 @@ export interface MessagesApi {
     max_tokens: number;
     system: Array<{ type: "text"; text: string; cache_control?: { type: "ephemeral" } }>;
     messages: Array<{ role: "user"; content: string }>;
+    tools: AnthropicTool[];
+    tool_choice: AnthropicToolChoice;
   }) => Promise<unknown>;
 }
 
@@ -20,7 +38,8 @@ interface ClaudeUsage {
 
 interface ClaudeContentBlock {
   type: string;
-  text?: string;
+  name?: string;
+  input?: unknown;
 }
 
 interface ClaudeMessageResponse {
@@ -58,6 +77,13 @@ export function createClaudeClient(deps: {
   maxTokens?: number;
 }): ClaudeClient {
   const maxTokens = deps.maxTokens ?? 2048;
+  const inputSchema = z.toJSONSchema(llmAnswerSchema) as AnthropicTool["input_schema"];
+  const answerTool: AnthropicTool = {
+    name: ANSWER_TOOL_NAME,
+    description: ANSWER_TOOL_DESCRIPTION,
+    input_schema: inputSchema,
+  };
+
   return {
     async ask({ systemPrompt, question, model }) {
       const start = Date.now();
@@ -72,23 +98,22 @@ export function createClaudeClient(deps: {
           },
         ],
         messages: [{ role: "user", content: question }],
+        tools: [answerTool],
+        tool_choice: { type: "tool", name: ANSWER_TOOL_NAME },
       });
       const response = raw as ClaudeMessageResponse;
       const latency_ms = Date.now() - start;
 
-      const textBlock = response.content.find((c) => c.type === "text");
-      if (!textBlock?.text) {
-        throw new Error("Claude response missing text content");
+      const toolUse = response.content.find(
+        (c) => c.type === "tool_use" && c.name === ANSWER_TOOL_NAME
+      );
+      if (!toolUse || toolUse.input === undefined) {
+        throw new Error(
+          `Claude response missing tool_use block for ${ANSWER_TOOL_NAME}`
+        );
       }
 
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(textBlock.text);
-      } catch (e) {
-        throw new Error(`Claude response is not valid JSON: ${(e as Error).message}`);
-      }
-
-      const answer = llmAnswerSchema.parse(parsed);
+      const answer = llmAnswerSchema.parse(toolUse.input);
 
       const cache_read = response.usage.cache_read_input_tokens ?? 0;
       const cache_create = response.usage.cache_creation_input_tokens ?? 0;

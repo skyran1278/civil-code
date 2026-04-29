@@ -22,21 +22,11 @@ export function buildSystemPrompt(corpus: Corpus): string {
 規則：
 1. 你只能根據下方〈法規全文〉回答，**不得依靠任何訓練資料**或一般常識補充。
 2. 每一個事實論述都必須附上引用：條編號 + 取自規範本文或解說的 **verbatim 原文片段**（逐字、不得改寫、不得省略空白與全形符號）。
-3. 若使用者問題在法規中找不到對應依據，回答必須是「規範中未明訂」，並回傳空 citations 陣列。
+3. 若使用者問題在法規中找不到對應依據，answer 欄位必須是「規範中未明訂」，並回傳空 citations 陣列。
 4. 引用片段必須是 body 或 commentary 中**實際出現的連續字串**；server 端會做字串比對驗證。任何拼湊、改寫或近似都會被拒絕。
 5. 用繁體中文回答，技術名詞（如 d、As、fc'）保留原符號。
 
-輸出必須是嚴格 JSON，符合以下 schema（不要 markdown 區塊、不要說明、只回 JSON 物件）：
-{
-  "answer": string,                        // 自然語言回答
-  "citations": [                           // 答案所依據的條文片段
-    {
-      "article_id": string,                // 例如 "3.7.5"
-      "quote": string,                     // 來自 body 或 commentary 的 verbatim 原文片段
-      "source": "body" | "commentary"
-    }
-  ]
-}
+請呼叫 \`answer_with_citations\` 工具回答；citations 必須引用 body 或 commentary 的 verbatim 片段。
 
 ---
 〈法規全文〉

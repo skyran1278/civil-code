@@ -87,12 +87,8 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("規範中未明訂");
   });
 
-  it("describes the required JSON output shape", () => {
+  it("instructs the model to call the answer_with_citations tool", () => {
     const prompt = buildSystemPrompt(corpus);
-    expect(prompt).toContain("answer");
-    expect(prompt).toContain("citations");
-    expect(prompt).toContain("article_id");
-    expect(prompt).toContain("quote");
-    expect(prompt).toContain("source");
+    expect(prompt).toContain("answer_with_citations");
   });
 });
