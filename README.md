@@ -1,3 +1,19 @@
+# 1. 下載 GL000236 PDF 放到 data/raw/concrete-design-code-112.pdf
+
+    https://glrs.moi.gov.tw/LawContent.aspx?id=GL000236#lawmenu
+
+# 2. 設環境變數
+
+echo "ANTHROPIC_API_KEY=sk-..." > .env.local
+
+# 3. 跑一次性 ingest
+
+npm run ingest data/raw/concrete-design-code-112.pdf
+
+# 4. 啟動
+
+npm run dev
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
