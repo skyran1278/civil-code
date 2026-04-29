@@ -1,0 +1,42 @@
+{
+  "meta": {
+    "law_id": "GL000236",
+    "law_name": "建築物混凝土結構設計規範",
+    "version": "112年8月10日修正 (sample fixture)",
+    "source_url": "https://glrs.moi.gov.tw/LawContent.aspx?id=GL000236",
+    "ingested_at": "2026-04-29",
+    "model_used_for_ingest": "manual-fixture"
+  },
+  "articles": [
+    {
+      "id": "3.7.5",
+      "chapter": "第三章 強度與使用性",
+      "section": "3.7 撓曲與軸力",
+      "subsection": "3.7.5 鋼筋之最小用量",
+      "body": "撓曲構材任一斷面之拉力主筋斷面積 As 不得少於下列規定值。",
+      "commentary": "本條規定旨在確保構材於混凝土開裂後仍有足夠強度，避免突然脆性破壞。",
+      "tables": [],
+      "reviewed": false
+    },
+    {
+      "id": "15.5.4",
+      "chapter": "第十五章 耐震設計之特殊規定",
+      "section": "15.5 撓曲構材",
+      "subsection": "15.5.4 箍筋",
+      "body": "撓曲構材兩端在 2h 範圍內之箍筋間距不得超過下列各值之最小者：（一）有效深度 d/4。（二）最小縱向鋼筋直徑之 8 倍。（三）箍筋直徑之 24 倍。（四）300 mm。",
+      "commentary": "此條規範耐震梁端部之圍束箍筋間距，以確保塑鉸區具有充分之韌性與圍束。",
+      "tables": [],
+      "reviewed": false
+    },
+    {
+      "id": "13.7",
+      "chapter": "第十三章 細節",
+      "section": "13.7 鋼筋之保護層",
+      "subsection": "13.7 混凝土保護層",
+      "body": "現場澆置混凝土之保護層厚度，於室內構材其受撓主筋淨保護層不得小於 20 mm；外露於風雨之構材不得小於 40 mm。",
+      "commentary": null,
+      "tables": [],
+      "reviewed": false
+    }
+  ]
+}
