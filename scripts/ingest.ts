@@ -50,7 +50,7 @@ async function extract(input: ExtractionInput): Promise<void> {
     [k: string]: unknown;
   };
 
-  const response = await client.messages.create({
+  const stream = client.messages.stream({
     model: input.model,
     max_tokens: 64000,
     tools: [
@@ -75,6 +75,7 @@ async function extract(input: ExtractionInput): Promise<void> {
       },
     ],
   });
+  const response = await stream.finalMessage();
 
   const toolUse = response.content.find(
     (c) => c.type === "tool_use" && c.name === EXTRACTION_TOOL_NAME
